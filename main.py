@@ -33,6 +33,7 @@ from   PIL import Image
 
 # Custom classes
 import Satellite_Data_Set_Class as sds
+import ClassNet
 
 
 
