@@ -1,0 +1,127 @@
+class ResNet():
+
+  def train_model(model, criterion, optimizer, train_data, test_data, scheduler, mini_batch_size=32, num_epochs=20, saving_path=''):
+    since = time.time()
+    
+    best_model_wts = copy.deepcopy(model.state_dict())
+    best_acc = 0.0
+    train_acc_list = []
+    val_acc_list = []
+    text = ''
+    text += '\nThis is the training of the ' + train_data.name + 'set'
+    epoch_text = ''
+    for epoch in range(num_epochs):
+      epoch_text = f'\n\nEpoch {epoch}/{num_epochs-1}'
+      epoch_text += '\n'
+      epoch_text += "-" * 10
+      epoch_text += '\n'
+
+      for phase in ['train', 'val']:
+        if phase == 'train':
+          model.train()
+          working_data = torch.utils.data.DataLoader(train_data, batch_size=mini_batch_size, shuffle=True)
+        else:
+          model.eval()
+          working_data = torch.utils.data.DataLoader(test_data, batch_size=mini_batch_size, shuffle=True)
+        running_loss = 0.0
+        running_corrects = 0
+
+        for i, data in enumerate(working_data):
+          inputs = data['image'].to(device)
+          labels = data['label'].to(device)
+
+          with torch.set_grad_enabled(phase=='train'):
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+            loss = criterion(outputs, labels)
+
+            if phase == 'train':
+              optimizer.zero_grad()
+              loss.backward()
+              optimizer.step()
+
+          running_loss += loss.item() * inputs.size(0)
+          running_corrects += torch.sum(preds == labels.data)
+
+        if phase == 'train':
+          scheduler.step()
+        
+        epoch_loss = (running_loss/working_data.__len__())/mini_batch_size
+        epoch_acc = (running_corrects.double()/working_data.__len__())/mini_batch_size
+        epoch_text += '\n'
+        epoch_text += '{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc)
+        if phase == 'train':
+          train_acc_list += [epoch_acc.item()]
+        else:
+          val_acc_list += [epoch_acc.item()]
+
+        if phase == 'val' and epoch_acc > best_acc:
+          best_acc = epoch_acc
+          best_model_wts = copy.deepcopy(model.state_dict())
+      text += epoch_text
+      print('\n')
+      print(epoch_text)
+      
+
+    #Get data for saving train, val acc 
+    time_elapsed = time.time() - since 
+    dic_val_train = {}
+    dic_val_train['train_acc'] = train_acc_list
+    dic_val_train['val_acc'] = val_acc_list
+    text += '\n' + str(dic_val_train)
+    text += f'\nTraining complete in {time_elapsed//60:.0f}m {time_elapsed%60:.0f}s'
+    text += f'\nBest val Acc: {best_acc:4f}'
+    
+
+    print(f'Training complete in {time_elapsed//60:.0f}m {time_elapsed%60:.0f}s')
+    print(f'Best val Acc: {best_acc:4f}')
+    print(text)
+    visualize.show_line_graph(list(range(num_epochs)), [train_acc_list, val_acc_list], 'Epochs', ['train', 'val'], train_data.name)
+    model.load_state_dict(best_model_wts)
+    log = open(saving_path + 'log_file.txt', 'a')
+    log.write(text)
+    log.close()
+
+    return model
+
+  def finetune_model(number_features=12):
+    """
+    Reset the final layer of Resnet18
+
+    Parameters:
+    number_features (int): number of classes to predict
+    model.to(device) 
+    """
+    model = models.resnet18(weights='IMAGENET1K_V1')
+    num_features = model.fc.in_features
+    model.fc = nn.Linear(num_features, number_features)
+    model.to(device)
+    return model
+
+  def feature_extractor(number_features=12):
+    """
+    Use ResNet18 without resetting the final layer of Resnet18 (this method is faster)
+    Don't forget model.to(device) 
+    Parameters:
+    number_features (int): number of classes to predict
+    """
+    model = models.resnet18(weights='IMAGENET1K_V1')
+    for param in model.parameters():
+      param.requires_grad = False
+      
+    num_features = model.fc.in_features
+
+    model.fc = nn.Linear(num_features, 12)
+    model.to(device)
+    return model
+
+  def blank_model(number_features=12):
+    model = models.resnet18(pretrained=False)
+    model.conv1 = torch.nn.Conv2d(4, 64, kernel_size=(3, 3), stride=(2, 2), padding=(3, 3), bias=False)
+
+      
+    num_features = model.fc.in_features
+
+    model.fc = nn.Linear(num_features, 12)
+    model.to(device)
+    return model
