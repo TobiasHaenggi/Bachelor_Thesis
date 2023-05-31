@@ -1,0 +1,56 @@
+# Visualizations
+
+class visualize():
+  TINY_SIZE = 6
+  SMALL_SIZE = 8
+  MEDIUM_SIZE = 10
+  BIGGER_SIZE = 12
+
+  plt.rc('font', size=MEDIUM_SIZE)          # controls default text sizes
+  plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+  plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+  plt.rc('xtick', labelsize=TINY_SIZE)    # fontsize of the tick labels
+  plt.rc('ytick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+  plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+  plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+  def show_plot(x_list, y_list, x_name='', y_name='', title=''):
+    fig = plt.figure()
+    ax = fig.add_axes([0,0,1,1])
+    ax.bar(x_list, y_list)
+    plt.title(title)
+    plt.xlabel(x_name)
+    plt.ylabel(y_name)
+    plt.show()
+  
+  
+  def show_line_graph(x_list, y_list, x_name='', y_name='', title='', y_label=''):
+    """
+    Display one or multiple line graphs
+
+    Parameters:
+      x_list (list): List containing the x values. Only provide *one* list
+      y_list (list): Lists containing the y values. If you want to plot multiple graphs, structure as followed: [[y_list_1_values], [y_list_2_values]]
+      x_name (str) : Name of the x axis
+      y_name (str|list) : Number of y_name values must be equal to number of lists in y_list. If there is only one value, you may enter the value as string
+      title (str)  : The displayed title of the graph
+
+      Warning, as of writing the maximum length of y input lists are 8
+    """
+    color_list = ['b', 'r', 'g', 'c', 'm', 'y', 'k', 'w']
+    if isinstance(y_list[0], list):
+      for i, y_data in list(enumerate(y_list)):
+        plt.plot(x_list, y_data, label=y_name[i], color=color_list[i])
+      plt.xlabel(x_name)
+      plt.ylabel(y_label)
+      plt.title(title)
+      if len(y_name) > 0:
+        plt.legend()
+      plt.show()
+    else:
+      plt.plot(x_list, y_list, label=y_name)
+      plt.xlabel(x_name)
+      plt.title(title)
+      if len(y_name) > 0:
+        plt.legend()
+      plt.show()
