@@ -34,6 +34,7 @@ import visualize
 # Custom classes
 import Satellite_Data_Set_Class as sds
 import ClassNet
+import ResNet
 
 
 
@@ -66,3 +67,15 @@ satellite_csv_file['patch_id'] = satellite_csv_file['patch_id'].astype(str) + '_
 
 raw_dataset = sds(csv_file=satellite_csv_file,
                    root_dir=path)
+############
+# TRAINING #
+############
+
+untrained_model = ResNet.blank_model()
+untrained_model.to(device)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(untrained_model.parameters(), lr=0.1)
+step_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+trained_model = ResNet.train_model(untrained_model, criterion, optimizer, trainer, test_quick, step_lr_scheduler, mini_batch_size=256, num_epochs=2)
+path = 'model_' + trainer.name + '_' + str(torch_seed) + '.pt'
+torch.save(trained_model.state_dict(), path)
